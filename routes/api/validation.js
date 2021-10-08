@@ -1,11 +1,11 @@
-const Joi = require("joi");
+const Joi = require('joi');
 
 const schemaCreateContact = Joi.object({
   name: Joi.string().min(3).max(30).required(),
   email: Joi.string()
     .email({
       minDomainSegments: 2,
-      tlds: { allow: ["com", "net"] },
+      tlds: { allow: ['com', 'net'] },
     })
     .required(),
   phone: Joi.string()
@@ -16,20 +16,12 @@ const schemaCreateContact = Joi.object({
 });
 
 const schemaUpdateContact = Joi.object({
-  name: Joi.string().min(3).max(30).optional(),
-  email: Joi.string()
-    .email({
-      minDomainSegments: 2,
-      tlds: { allow: ["com", "net"] },
-    })
-    .optional(),
-
-  phone: Joi.string()
-    .min(7)
-    .max(9)
-    // .pattern(/^[(][\d]{3}[)]\s[\d]{3}[-][\d]{4}/)
-    .optional(),
-}).min(1);
+  name: Joi.string().min(3).max(30),
+  email: Joi.string().email(),
+  phone: Joi.string(),
+  password: Joi.string().min(7).max(15),
+  subscription: Joi.string(),
+});
 
 const validate = (schema, obj, next) => {
   const { error } = schema.validate(obj);
@@ -37,7 +29,7 @@ const validate = (schema, obj, next) => {
     const [{ message }] = error.details;
     return next({
       status: 400,
-      message: `Field: ${message.replace(/"/g, "")}`,
+      message: `Field: ${message.replace(/"/g, '')}`,
     });
   }
   next();

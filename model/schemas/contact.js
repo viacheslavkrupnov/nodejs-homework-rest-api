@@ -1,36 +1,24 @@
-const mongoose = require('mongoose');
-const { Schema, model } = mongoose;
+const { Schema, model, SchemaTypes } = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const contactSchema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'This fill is required, please fill it'],
-      unique: false,
+      required: [true, 'Set name for your contact'],
     },
     email: {
       type: String,
-      required: [true, 'This fill is required, please fill it'],
+      required: [true, 'Set email for your contact'],
       unique: true,
     },
     phone: {
       type: Number,
-      required: [true, 'This fill is required, please fill it'],
-      unique: true,
-      minlength: 10,
-      maxlength: 13,
+      required: [true, 'Set phone for your contact'],
     },
-    subscription: {
-      type: String,
-      default: 'free',
-    },
-    password: {
-      type: String,
-      default: 'password',
-    },
-    token: {
-      type: String,
-      default: '',
+    owner: {
+      type: SchemaTypes.ObjectId,
+      ref: 'user',
     },
   },
   {
@@ -38,6 +26,8 @@ const contactSchema = new Schema(
     timestamps: true,
   },
 );
+
+contactSchema.plugin(mongoosePaginate);
 
 const Contact = model('contact', contactSchema);
 

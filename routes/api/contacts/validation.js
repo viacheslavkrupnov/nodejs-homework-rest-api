@@ -9,16 +9,21 @@ const schemaCreateContact = Joi.object({
     })
     .required(),
   phone: Joi.string()
-    .min(7)
-    .max(9)
-    // .pattern(/^[(][\d]{3}[)]\s[\d]{3}[-][\d]{4}/)
-    .optional(),
+
+    .pattern(/^[0-9]+$/)
+    .required(),
+  subscription: Joi.string().optional(),
+  password: Joi.string().optional(),
+  token: Joi.string().optional(),
 });
 
 const schemaUpdateContact = Joi.object({
   name: Joi.string().min(3).max(30),
   email: Joi.string().email(),
-  phone: Joi.string(),
+  phone: Joi.string()
+
+    .pattern(/^[0-9]+$/)
+    .required(),
   password: Joi.string().min(7).max(15),
   subscription: Joi.string(),
 });
@@ -42,3 +47,5 @@ module.exports.createContact = (req, res, next) => {
 module.exports.updateContact = (req, res, next) => {
   return validate(schemaUpdateContact, req.body, next);
 };
+
+

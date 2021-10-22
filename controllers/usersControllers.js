@@ -3,6 +3,11 @@ require('dotenv').config();
 
 const Users = require('../model/users');
 const { HttpCode, Status } = require('../helpers/constants');
+const {
+  downloadAvatarByUrl,
+  saveAvatarToStatic,
+  deletePreviousAvatar,
+} = require('../helpers/avatar-handler');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -21,6 +26,14 @@ async function create(req, res, next) {
     }
 
     const newUser = await Users.createUser(req.body);
+    const { pathToTmpFolder, fileName } = await downloadAvatarByUrl(newUser);
+    const newAvatarUrl = await saveAvatarToStatic(
+      newUser.id,
+      pathToTmpFolder,
+      fileName,
+    );
+    await Users.updateAvatarUrl(newUser.id, newAvatarUrl);
+
     return res.status(HttpCode.CREATED).json({
       status: Status.SUCCESS,
       code: HttpCode.CREATED,
@@ -28,6 +41,7 @@ async function create(req, res, next) {
         id: newUser.id,
         email: newUser.email,
         subscription: newUser.subscription,
+        avatar: newUser.avatar,
       },
     });
   } catch (e) {
@@ -39,7 +53,7 @@ async function login(req, res, next) {
   try {
     const { email, password } = req.body;
     const user = await Users.findByEmail(email);
-    const isPasswordValid = await user.validPassword(password);
+    const isPasswordValid = await user?.validPassword(password);
 
     if (!user || !isPasswordValid) {
       return res.status(HttpCode.UNAUTHORIZED).json({
@@ -54,6 +68,7 @@ async function login(req, res, next) {
     const payload = { id };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '3h' });
     await Users.updateToken(id, token);
+
     return res.status(HttpCode.OK).json({
       status: Status.SUCCESS,
       code: HttpCode.OK,
@@ -112,10 +127,30 @@ async function updateSubscription(req, res, next) {
   }
 }
 
+async function updateAvatar(req, res, next) {
+  try {
+    const id = req.user.id;
+    const pathFile = req.file.path;
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const newAvatarUrl = await saveAvatarToStatic(id, pathFile, fileName);
+    await Users.updateAvatarUrl(id, newAvatarUrl);
+    await deletePreviousAvatar(req.user.avatarURL);
+
+    return res.status(HttpCode.OK).json({
+      status: Status.SUCCESS,
+      code: HttpCode.OK,
+      data: { newAvatarUrl },
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 module.exports = {
   create,
   login,
   logout,
   current,
   updateSubscription,
+  updateAvatar,
 };

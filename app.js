@@ -2,14 +2,19 @@ const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
 const helmet = require('helmet')
+const path = require('path');
 const { HttpCode } = require('./helpers/constants');
 
 const contactsRouter = require('./routes/api/contacts');
 const usersRouter = require('./routes/api/users');
+require('dotenv').config();
 
 const app = express();
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
+const PUBLIC_DIR = process.env.PUBLIC_DIR;
+
+app.use(express.static(path.join(__dirname, PUBLIC_DIR)));
 
 app.use(helmet())
 app.use(logger(formatsLogger));

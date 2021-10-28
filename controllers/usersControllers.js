@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { nanoid } = require('nanoid');
 require('dotenv').config();
 
 const Users = require('../model/users');
@@ -9,11 +10,12 @@ const {
   deletePreviousAvatar,
 } = require('../helpers/avatar-handler');
 
+const EmailService = require('../services/email-verification');
 const SECRET_KEY = process.env.JWT_SECRET;
 
 async function create(req, res, next) {
   try {
-    const { email } = req.body;
+    const { email, name } = req.body;
 
     const user = await Users.findByEmail(email);
     if (user) {
@@ -25,7 +27,21 @@ async function create(req, res, next) {
       });
     }
 
-    const newUser = await Users.createUser(req.body);
+    // create verification token
+    const verificationToken = nanoid();
+
+    // send verification email
+    const emailService = new EmailService(process.env.NODE_ENV);
+    await emailService.sendVerificationEmail(verificationToken, email, name);
+
+
+    // create user in db
+    const newUser = await Users.createUser({
+      ...req.body,
+      verified: false,
+      verificationToken,
+    });
+
     const { pathToTmpFolder, fileName } = await downloadAvatarByUrl(newUser);
     const newAvatarUrl = await saveAvatarToStatic(
       newUser.id,
@@ -100,6 +116,7 @@ async function current(req, res, next) {
         id: req.user.id,
         email: req.user.email,
         subscription: req.user.subscription,
+        avatar: req.user.avatarURL,
       },
     });
   } catch (e) {
@@ -146,6 +163,33 @@ async function updateAvatar(req, res, next) {
   }
 }
 
+async function verifyEmail(req, res, next) {
+  try {
+    const user = await Users.findUserByVerificationToken(
+      req.params.verificationToken,
+    );
+
+    if (user) {
+      await Users.updateVerificationToken(user._id, true, null);
+
+      return res.status(HttpCode.OK).json({
+        status: Status.SUCCESS,
+        code: HttpCode.OK,
+        message: 'Verification successful',
+      });
+    }
+
+    return res.status(HttpCode.BAD_REQUEST).json({
+      status: Status.ERROR,
+      code: HttpCode.BAD_REQUEST,
+      data: 'Bad request',
+      message: 'Verification has already been passed',
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 module.exports = {
   create,
   login,
@@ -153,4 +197,5 @@ module.exports = {
   current,
   updateSubscription,
   updateAvatar,
+  verifyEmail,
 };

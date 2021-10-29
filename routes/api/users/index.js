@@ -23,5 +23,6 @@ router.patch(
   usersController.updateSubscription,
 );
 
+router.get('/verify/:verificationToken', usersController.verifyEmail);
 
 module.exports = router;

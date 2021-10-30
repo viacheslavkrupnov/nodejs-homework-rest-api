@@ -57,7 +57,7 @@ class EmailService {
     this.#sender.setApiKey(process.env.SENDGRID_API_KEY);
     const msg = {
       to: email,
-      from: 'slava86krupnov@gmail.com',
+      from: `${process.env.SENDER_VERIFICATION_EMAIL}`,
       subject: 'Confirm registration',
       html: emailBody,
     };
